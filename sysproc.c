@@ -14,16 +14,16 @@ sys_fork(void)
 }
 
 int
-sys_exit(void)
+sys_exit(int status)
 {
-  exit();
+  exit(status);
   return 0;  // not reached
 }
 
 int
-sys_wait(void)
-{
-  return wait();
+sys_wait(int* status)
+{	
+  return wait(status);
 }
 
 int
@@ -76,6 +76,13 @@ sys_sleep(void)
   release(&tickslock);
   return 0;
 }
+
+int 
+sys_memsize(void)
+{
+   return myproc()->sz;
+}
+
 
 // return how many clock tick interrupts have occurred
 // since start.
