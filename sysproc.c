@@ -21,6 +21,21 @@ sys_exit(int status)
 }
 
 int
+sys_set_ps_priority(int priority)
+{
+  myproc()->ps_priority = priority; 
+  return myproc()->ps_priority;
+}
+
+int 
+sys_set_cfs_priority(int priority)
+{
+  if (priority<1 || priority>3)
+    return -1;
+  myproc()->cfs_priority = priority; 
+  return 0;
+}
+int
 sys_wait(int* status)
 {	
   return wait(status);

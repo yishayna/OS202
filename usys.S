@@ -30,3 +30,6 @@ SYSCALL(sbrk)
 SYSCALL(sleep)
 SYSCALL(uptime)
 SYSCALL(memsize)
+SYSCALL(set_ps_prority)
+SYSCALL(set_cfs_prority)
+
