@@ -21,6 +21,19 @@ extern void trapret(void);
 static void wakeup1(void *chan);
 
 void
+updateacc(struct proc* p){
+  long long min = 0;
+  struct proc *curr;
+  for(curr = ptable.proc; curr < &ptable.proc[NPROC]; curr++){
+    if((curr->state == RUNNABLE || curr->state == RUNNING) && curr->accumulator < min ){
+      min = curr->accumulator;
+    }
+  }
+  p->accumulator = min;
+}
+
+
+void
 pinit(void)
 {
   initlock(&ptable.lock, "ptable");
@@ -120,16 +133,6 @@ found:
   return p;
 }
 
-void
-updateacc(proc* p){
-  long long min = 0;
-  for(curr = ptable.proc; curr < &ptable.proc[NPROC]; curr++){
-    if((curr->state == RUNNABLE || curr->state == RUNNING) && curr->accumulator < min ){
-      min = curr->accumulator;
-    }
-  }
-  p->accumulator = min;
-}
 
 //PAGEBREAK: 32
 // Set up first user process.
@@ -332,6 +335,24 @@ wait(int *status)
   }
 }
 
+void 
+doswitch(struct proc* p, struct cpu* c)
+{
+  // Switch to chosen process.  It is the process's job
+    // to release ptable.lock and then reacquire it
+    // before jumping back to us.
+    c->proc = p;
+    switchuvm(p);
+    p->state = RUNNING;
+
+    swtch(&(c->scheduler), p->context);
+    switchkvm();
+
+    // Process is done running for now.
+    // It should have changed its p->state before coming back.
+    c->proc = 0;
+}
+
 //PAGEBREAK: 42
 // Per-CPU process scheduler.
 // Each CPU calls scheduler() after setting itself up.
@@ -343,7 +364,7 @@ wait(int *status)
 void
 scheduler(void)
 {
-  struct proc *p ;
+  struct proc *p = null;
   struct proc *nextp;
   struct cpu *c = mycpu();
   double pfactor, nextfactor, decay;
@@ -357,16 +378,19 @@ scheduler(void)
 
     switch(sched_type){
 
-      case(default):{
+      case(Default):
         // Loop over process table looking for process to run.
         for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+          if(sched_type != Default)
+            break;
           if(p->state != RUNNABLE)
             continue;
+          doswitch(p,c);
           }
         break;    
-      }
+      
 
-      case(priority):{
+      case(Priority):
         // update the current proc with appropriate acc value
         if(c->proc != null)
           c->proc-> accumulator +=  c->proc-> ps_priority;
@@ -376,10 +400,11 @@ scheduler(void)
           if(nextp->state == RUNNABLE && nextp-> accumulator < p->accumulator)
             p = nextp;
         }
-        break;  
-      }
+        doswitch(p,c);
+      break;  
+      
 
-      case(CFS):{
+      case(CFS):
         // Loop over process table looking for process with the minimal run time ratio value to run.
         p = ptable.proc;
         decay =  p-> cfs_priority == 1? 0.75 :  p-> cfs_priority == 3?  1.25 : p-> cfs_priority;
@@ -391,26 +416,16 @@ scheduler(void)
             pfactor = nextfactor;
           }
         }
-        break;    
-      }
+        doswitch(p,c);
+      break;    
+      
+      // Switch to chosen process.  It is the process's job
+      // to release ptable.lock and then reacquire it
+      // before jumping back to us.
 
-      default:
-        // Switch to chosen process.  It is the process's job
-        // to release ptable.lock and then reacquire it
-        // before jumping back to us.
-        c->proc = p;
-        switchuvm(p);
-        p->state = RUNNING;
 
-        swtch(&(c->scheduler), p->context);
-        switchkvm();
-
-        // Process is done running for now.
-        // It should have changed its p->state before coming back.
-        c->proc = 0;
-      }
-      release(&ptable.lock);
     }
+    release(&ptable.lock);
   }
 }
 
@@ -605,7 +620,7 @@ setproctimes(void){
     if(p->state == SLEEPING)
       p->stime = p->stime+1;
     else  if(p->state == RUNNING)
-      p->rutime = p->rutime+1;
+      p->rtime = p->rtime+1;
     else if (p->state == RUNNABLE)
       p->retime = p->retime+1;
   }

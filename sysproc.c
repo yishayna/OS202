@@ -21,20 +21,39 @@ sys_exit(int status)
 }
 
 int
-sys_set_ps_priority(int priority)
+sys_set_ps_priority(void)
 {
+  int priority;
+  if(argint(0, &priority)<0)
+    panic("cannot get ps priority");
   myproc()->ps_priority = priority; 
   return myproc()->ps_priority;
 }
 
 int 
-sys_set_cfs_priority(int priority)
+sys_set_cfs_priority(void)
 {
-  if (priority<1 || priority>3)
+  int pr;
+  if(argint(0, &pr)<0)
+    panic("cannot get cfs priority");
+  if (pr<1 || pr>3)
     return -1;
-  myproc()->cfs_priority = priority; 
+  myproc()->cfs_priority = pr; 
   return 0;
 }
+
+int 
+sys_policy(void)
+{
+  int policy;
+  if(argint(0, &policy) < 0)
+    panic ("cannot get policy");
+  if(policy < 0 || policy > 2)
+    return -1;
+  sched_type = policy;
+  return 0;
+}
+
 int
 sys_wait(int* status)
 {	
