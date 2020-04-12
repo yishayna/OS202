@@ -393,14 +393,12 @@ scheduler(void)
       
 
       case(Priority):
-        // update the current proc with appropriate acc value
-        if(c->proc != null)
-          c->proc-> accumulator +=  c->proc-> ps_priority;
         // Loop over process table looking for process with the minimal acc value to run.
         p = ptable.proc;
         for(nextp = ptable.proc; nextp < &ptable.proc[NPROC]; nextp++){
-          if(nextp->state == RUNNABLE && nextp-> accumulator < p->accumulator)
+          if((nextp->state == RUNNABLE) && (nextp-> accumulator < p->accumulator)){
             p = nextp;
+          }
         }
         doswitch(p,c);
       break;  
@@ -463,6 +461,8 @@ yield(void)
 {
   acquire(&ptable.lock);  //DOC: yieldlock
   myproc()->state = RUNNABLE;
+  // update the current proc with appropriate acc value
+  myproc()-> accumulator +=  myproc()-> ps_priority;
   sched();
   release(&ptable.lock);
 }

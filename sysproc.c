@@ -51,7 +51,7 @@ sys_policy(void)
   int policy;
   if(argint(0, &policy) < 0)
     panic ("cannot get policy");
-  if(policy < 0 || policy > 2)
+  if( (policy < 0) ||(policy >2))
     return -1;
   sched_type = policy;
   return 0;
