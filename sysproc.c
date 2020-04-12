@@ -14,8 +14,11 @@ sys_fork(void)
 }
 
 int
-sys_exit(int status)
+sys_exit(void)
 {
+  int status;
+  if(argint(0, &status) < 0)
+    return -1;
   exit(status);
   return 0;  // not reached
 }
@@ -55,8 +58,10 @@ sys_policy(void)
 }
 
 int
-sys_wait(int* status)
+sys_wait(void)
 {	
+  int* status;
+  argptr (0 , (void*)&status ,sizeof(*status));
   return wait(status);
 }
 
