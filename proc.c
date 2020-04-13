@@ -356,6 +356,49 @@ doswitch(struct proc* p, struct cpu* c)
   }
 }
 
+double
+cfs_priorty(struct proc* p)
+{
+double decay,ttime;
+decay = p-> cfs_priority == 1?  0.75 :
+        p-> cfs_priority == 3?  1.25 : 1;
+ttime = p->rtime + p->stime + p->retime;
+return ((p->rtime * decay)/ ( ttime > 0 ?ttime : 1));
+
+}
+
+double
+find_min_factor()
+{
+  struct proc *nextp;
+  double minfactor;
+
+  minfactor = cfs_priorty(ptable.proc);
+  for(nextp = ptable.proc; nextp < &ptable.proc[NPROC]; nextp++){
+      if(nextp->state == RUNNABLE &&  cfs_priorty(nextp) < minfactor){
+        minfactor = cfs_priorty(nextp);
+      }
+    }
+  return minfactor;
+
+}
+
+long long
+find_min_acc()
+{
+  struct proc *nextp;
+  long long minacc;
+
+  minacc = ptable.proc->accumulator;
+  for(nextp = ptable.proc; nextp < &ptable.proc[NPROC]; nextp++){
+      if((nextp->state == RUNNABLE) && (nextp-> accumulator < minacc)){
+        minacc = nextp-> accumulator;
+      }
+  }
+  return minacc;
+} 
+
+
 //PAGEBREAK: 42
 // Per-CPU process scheduler.
 // Each CPU calls scheduler() after setting itself up.
@@ -368,9 +411,9 @@ void
 scheduler(void)
 {
   struct proc *p = null;
-  struct proc *nextp;
   struct cpu *c = mycpu();
-  double pfactor, nextfactor, decay;
+  double minfactor;
+  long long minacc;
   c->proc = 0;
 
   for(;;){
@@ -384,8 +427,6 @@ scheduler(void)
       case(Default):
         // Loop over process table looking for process to run.
         for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-          if(sched_type != Default)
-            break;
           if(p->state != RUNNABLE)
             continue;
           doswitch(p,c);
@@ -395,31 +436,25 @@ scheduler(void)
 
       case(Priority):
         // Loop over process table looking for process with the minimal acc value to run.
-        p = ptable.proc;
-        for(nextp = ptable.proc; nextp < &ptable.proc[NPROC]; nextp++){
-          if((nextp->state == RUNNABLE) && (nextp-> accumulator < p->accumulator)){
-            p = nextp;
-          }
+        minacc = find_min_acc();
+        for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+          if(p->state != RUNNABLE  || (p-> accumulator > minacc))
+            continue;
+          doswitch(p,c);   
         }
-        doswitch(p,c);
-      break;  
+        break;  
       
 
       case(CFS):
         // Loop over process table looking for process with the minimal run time ratio value to run.
-        p = ptable.proc;
-        decay =  p-> cfs_priority == 1? 0.75 :  p-> cfs_priority == 3?  1.25 : p-> cfs_priority;
-        pfactor = (p->rtime * decay)/ ( p->rtime + p->stime + p->retime);
-        for(nextp = ptable.proc; nextp < &ptable.proc[NPROC]; nextp++){
-          nextfactor = (nextp->rtime * nextp-> cfs_priority)/ ( nextp->rtime + nextp->stime + nextp->retime);
-          if(nextp->state == RUNNABLE && nextfactor < pfactor){
-            p = nextp;
-            pfactor = nextfactor;
-          }
+        minfactor = find_min_factor();
+        for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+          if((p->state != RUNNABLE) || (cfs_priorty(p) > minfactor))
+              continue;
+          doswitch(p,c);
         }
-        doswitch(p,c);
-      break;    
-
+        break; 
+              
     }
     release(&ptable.lock);
   }

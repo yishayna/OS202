@@ -13,7 +13,7 @@ int
 main(int argc, char *argv[])
 {
     int i, status;
-
+    printf(1,"PID    PS_PRIORITY    STIME   RETIME   RTIME \n");    
     for(i=2; i>-1; i--){
         if(fork() == 0){
             set_cfs_priority(i);
@@ -26,8 +26,7 @@ main(int argc, char *argv[])
             
             proc_info(performance);
             // to check: way formatting the string by %10s (width option) doesn't works.
-            printf(1,"PID    PS_PRIORITY    STIME   RETIME   RTIME \n");    
-            printf(1,"%d       %d          %d         %d       %d    \n", getpid(),performance->ps_priority, performance->stime,performance->retime,performance->retime);    
+            printf(1,"%d     %d     %d       %d      %d \n", getpid(),performance->ps_priority, performance->stime,performance->retime,performance->retime);    
             exit(0);
 
         } 
