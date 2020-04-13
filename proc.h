@@ -63,3 +63,10 @@ struct proc {
 //   original data and bss
 //   fixed-size stack
 //   expandable heap
+
+struct perf {
+int ps_priority;
+int stime;
+int retime;
+int rtime;
+};

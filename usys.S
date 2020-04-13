@@ -33,4 +33,4 @@ SYSCALL(memsize)
 SYSCALL(set_ps_priority)
 SYSCALL(set_cfs_priority)
 SYSCALL(policy)
-
+SYSCALL(proc_info)

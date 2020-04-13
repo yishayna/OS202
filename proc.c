@@ -335,24 +335,25 @@ wait(int *status)
   }
 }
 
+  
+// Switch to chosen process.  It is the process's job
+// to release ptable.lock and then reacquire it
+// before jumping back to us.
 void 
 doswitch(struct proc* p, struct cpu* c)
 {
-  // Switch to chosen process.  It is the process's job
-    // to release ptable.lock and then reacquire it
-    // before jumping back to us.
-    if(p){
-      c->proc = p;
-      switchuvm(p);
-      p->state = RUNNING;
+  if(p){
+    c->proc = p;
+    switchuvm(p);
+    p->state = RUNNING;
 
-      swtch(&(c->scheduler), p->context);
-      switchkvm();
+    swtch(&(c->scheduler), p->context);
+    switchkvm();
 
-      // Process is done running for now.
-      // It should have changed its p->state before coming back.
-      c->proc = 0;
-    }
+    // Process is done running for now.
+    // It should have changed its p->state before coming back.
+    c->proc = 0;
+  }
 }
 
 //PAGEBREAK: 42
@@ -418,11 +419,6 @@ scheduler(void)
         }
         doswitch(p,c);
       break;    
-      
-      // Switch to chosen process.  It is the process's job
-      // to release ptable.lock and then reacquire it
-      // before jumping back to us.
-
 
     }
     release(&ptable.lock);
@@ -620,11 +616,11 @@ setproctimes(void){
   acquire(&ptable.lock);
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
     if(p->state == SLEEPING)
-      p->stime = p->stime+1;
+      p->stime += 1;
     else  if(p->state == RUNNING)
-      p->rtime = p->rtime+1;
+      p->rtime +=1;
     else if (p->state == RUNNABLE)
-      p->retime = p->retime+1;
+      p->retime +=1;
   }
   release(&ptable.lock);
 }

@@ -39,7 +39,7 @@ sys_set_cfs_priority(void)
   int pr;
   if(argint(0, &pr)<0)
     panic("cannot get cfs priority");
-  if (pr<1 || pr>3)
+  if ( (pr<1) || (pr>3))
     return -1;
   myproc()->cfs_priority = pr; 
   return 0;
@@ -51,10 +51,23 @@ sys_policy(void)
   int policy;
   if(argint(0, &policy) < 0)
     panic ("cannot get policy");
-  if( (policy < 0) ||(policy >2))
+  if( (policy < 0) || (policy >2))
     return -1;
   sched_type = policy;
   return 0;
+}
+
+int 
+ sys_proc_info(void)
+{
+  struct perf* performance;
+  argptr (0 , (void*)&performance ,sizeof(*performance));
+  performance->ps_priority = myproc()->ps_priority;
+  performance->stime = myproc()->stime;
+  performance->retime = myproc()->retime;
+  performance->rtime = myproc()->rtime;
+  return 0;
+
 }
 
 int
