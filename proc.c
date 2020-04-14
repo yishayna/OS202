@@ -367,35 +367,40 @@ return ((p->rtime * decay)/ ( ttime > 0 ?ttime : 1));
 
 }
 
-double
+struct proc*
 find_min_factor()
 {
   struct proc *nextp;
   double minfactor;
+  struct proc *minproc= null;
 
   minfactor = -1;
   for(nextp = ptable.proc; nextp < &ptable.proc[NPROC]; nextp++){
       if(nextp->state == RUNNABLE &&  (minfactor == -1 || cfs_priorty(nextp) < minfactor)){
         minfactor = cfs_priorty(nextp);
+        minproc = nextp;
       }
     }
-  return minfactor;
+  return minproc;
 
 }
 
-long long
+struct proc*
 find_min_acc()
 {
   struct proc *nextp;
   long long minacc;
+  struct proc *minproc= null;
+
 
   minacc = -1;
   for(nextp = ptable.proc; nextp < &ptable.proc[NPROC]; nextp++){
       if((nextp->state == RUNNABLE) && (minacc== -1 || nextp-> accumulator < minacc)){
         minacc = nextp-> accumulator;
+        minproc = nextp;
       }
   }
-  return minacc;
+  return minproc;
 } 
 
 
@@ -412,8 +417,6 @@ scheduler(void)
 {
   struct proc *p = null;
   struct cpu *c = mycpu();
-  double minfactor;
-  long long minacc;
   c->proc = 0;
 
   for(;;){
@@ -436,31 +439,18 @@ scheduler(void)
       }
 	    break;
 
-      
-
       case(Priority):{
         // Loop over process table looking for process with the minimal acc value to run.
-        minacc = find_min_acc();
-
-        for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-          if(p->state != RUNNABLE  || (p-> accumulator != minacc))
-            continue;
-          doswitch(p,c);
-          break;
-        }   
+        p = find_min_acc();
+        doswitch(p,c);
+        break;
       }
       break;
 
       case(CFS):{
-
-        // Loop over process table looking for process with the minimal run time ratio value to run.
-        minfactor = find_min_factor();
-        for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-          if((p->state != RUNNABLE) || (cfs_priorty(p) != minfactor))
-              continue;
-          doswitch(p,c);
-          break;
-        }
+        p = find_min_factor();
+        doswitch(p,c);
+        break;
       }
       break; 
       
