@@ -373,9 +373,9 @@ find_min_factor()
   struct proc *nextp;
   double minfactor;
 
-  minfactor = cfs_priorty(ptable.proc);
+  minfactor = -1;
   for(nextp = ptable.proc; nextp < &ptable.proc[NPROC]; nextp++){
-      if(nextp->state == RUNNABLE &&  cfs_priorty(nextp) < minfactor){
+      if(nextp->state == RUNNABLE &&  (minfactor == -1 || cfs_priorty(nextp) < minfactor)){
         minfactor = cfs_priorty(nextp);
       }
     }
@@ -389,9 +389,9 @@ find_min_acc()
   struct proc *nextp;
   long long minacc;
 
-  minacc = ptable.proc->accumulator;
+  minacc = -1;
   for(nextp = ptable.proc; nextp < &ptable.proc[NPROC]; nextp++){
-      if((nextp->state == RUNNABLE) && (nextp-> accumulator < minacc)){
+      if((nextp->state == RUNNABLE) && (minacc== -1 || nextp-> accumulator < minacc)){
         minacc = nextp-> accumulator;
       }
   }
@@ -419,42 +419,53 @@ scheduler(void)
   for(;;){
     // Enable interrupts on this processor.
     sti();
-    
     acquire(&ptable.lock);
 
     switch(sched_type){
 
-      case(Default):
+      case(Default):{
         // Loop over process table looking for process to run.
         for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
           if(p->state != RUNNABLE)
             continue;
+          if(sched_type != 0)
+            break;
           doswitch(p,c);
+          break;
           }
-        break;    
+      }
+	    break;
+
       
 
-      case(Priority):
+      case(Priority):{
         // Loop over process table looking for process with the minimal acc value to run.
         minacc = find_min_acc();
-        for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-          if(p->state != RUNNABLE  || (p-> accumulator > minacc))
-            continue;
-          doswitch(p,c);   
-        }
-        break;  
-      
 
-      case(CFS):
+        for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+          if(p->state != RUNNABLE  || (p-> accumulator != minacc))
+            continue;
+          doswitch(p,c);
+          break;
+        }   
+      }
+      break;
+
+      case(CFS):{
+
         // Loop over process table looking for process with the minimal run time ratio value to run.
         minfactor = find_min_factor();
         for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-          if((p->state != RUNNABLE) || (cfs_priorty(p) > minfactor))
+          if((p->state != RUNNABLE) || (cfs_priorty(p) != minfactor))
               continue;
           doswitch(p,c);
+          break;
         }
-        break; 
-              
+      }
+      break; 
+      
+      default:
+        break;    
     }
     release(&ptable.lock);
   }
