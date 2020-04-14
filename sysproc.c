@@ -14,15 +14,67 @@ sys_fork(void)
 }
 
 int
-sys_exit(int status)
+sys_exit(void)
 {
+  int status;
+  if(argint(0, &status) < 0)
+    return -1;
   exit(status);
   return 0;  // not reached
 }
 
 int
-sys_wait(int* status)
+sys_set_ps_priority(void)
+{
+  int priority;
+  if(argint(0, &priority)<0)
+    panic("cannot get ps priority");
+  myproc()->ps_priority = priority; 
+  return myproc()->ps_priority;
+}
+
+int 
+sys_set_cfs_priority(void)
+{
+  int pr;
+  if(argint(0, &pr)<0)
+    panic("cannot get cfs priority");
+  if ( (pr<1) || (pr>3))
+    return -1;
+  myproc()->cfs_priority = pr; 
+  return 0;
+}
+
+int 
+sys_policy(void)
+{
+  int policy;
+  if(argint(0, &policy) < 0)
+    panic ("cannot get policy");
+  if( (policy < 0) || (policy >2))
+    return -1;
+  sched_type = policy;
+  return 0;
+}
+
+int 
+ sys_proc_info(void)
+{
+  struct perf* performance;
+  argptr (0 , (void*)&performance ,sizeof(*performance));
+  performance->ps_priority = myproc()->ps_priority;
+  performance->stime = myproc()->stime;
+  performance->retime = myproc()->retime;
+  performance->rtime = myproc()->rtime;
+  return 0;
+
+}
+
+int
+sys_wait(void)
 {	
+  int* status;
+  argptr (0 , (void*)&status ,sizeof(*status));
   return wait(status);
 }
 

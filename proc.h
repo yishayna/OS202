@@ -12,7 +12,7 @@ struct cpu {
 
 extern struct cpu cpus[NCPU];
 extern int ncpu;
-
+void       setproctimes(void);  // Function that adds ticks  
 //PAGEBREAK: 17
 // Saved registers for kernel context switches.
 // Don't need to save all the segment registers (%cs, etc),
@@ -39,7 +39,7 @@ struct proc {
   uint sz;                     // Size of process memory (bytes)
   pde_t* pgdir;                // Page table
   char *kstack;                // Bottom of kernel stack for this process
-  enum procstate state;        // Process state
+  enum procstate state;        // Process st
   int pid;                     // Process ID
   struct proc *parent;         // Parent process
   struct trapframe *tf;        // Trap frame for current syscall
@@ -50,6 +50,12 @@ struct proc {
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
   int status;                  // Status of curr process, 1 failure 0 success
+  long long accumulator;       // Sum of all priorities
+  int ps_priority;             // Priority 0-10
+  int cfs_priority;
+  int rtime;
+  int stime;
+  int retime;
 };
 
 // Process memory is laid out contiguously, low addresses first:
@@ -57,3 +63,10 @@ struct proc {
 //   original data and bss
 //   fixed-size stack
 //   expandable heap
+
+struct perf {
+int ps_priority;
+int stime;
+int retime;
+int rtime;
+};
